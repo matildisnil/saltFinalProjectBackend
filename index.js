@@ -15,11 +15,24 @@ const app = express();
 
 app.use(express.json());
 
-app.use(cors({
-  origin: [process.env.ORIGIN],
-  methods: ['GET', 'POST'],
+// app.use(cors({
+//   origin: [process.env.ORIGIN],
+//   methods: ['GET', 'POST'],
+//   credentials: true,
+// }));
+
+const whitelist = ["http://localhost:3000", "http://salt-final-project-frontend.herokuapp.com/", "https://salt-final-project-frontend.herokuapp.com/"]
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || whitelist.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else {
+      callback(new Error("Not allowed by CORS"))
+    }
+  },
   credentials: true,
-}));
+}
+app.use(cors(corsOptions));
 
 // use the more modern express bodyparser later here instead
 app.use('/login', bodyParser.json());
