@@ -21,7 +21,7 @@ app.use(express.json());
 //   credentials: true,
 // }));
 
-const whitelist = ["http://localhost:3000", "http://salt-final-project-frontend.herokuapp.com/", "https://salt-final-project-frontend.herokuapp.com/"]
+const whitelist = ["http://localhost:3000", "http://salt-final-project-frontend.herokuapp.com", "https://salt-final-project-frontend.herokuapp.com"]
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || whitelist.indexOf(origin) !== -1) {
