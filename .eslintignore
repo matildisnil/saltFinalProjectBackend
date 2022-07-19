@@ -1,0 +1,8 @@
+/server/public/javascript/*
+/cypress/integration/*
+/cypress/plugins/*
+/cypress/shared/*
+/cypress/support/*
+webpack.config.js
+/server/config
+**/*.spec.jss
