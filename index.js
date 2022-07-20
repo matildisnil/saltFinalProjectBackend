@@ -9,12 +9,14 @@ const asyncHandler = require('express-async-handler');
 const crypto = require('crypto');
 const { pool } = require('./database/connectionPool');
 const hobbies = require('./routes/hobbies');
-
+const fs = require('fs')
 const PORT = process.env.PORT || 3001;
 
 const store = new MemoryStore({ checkPeriod: 86400000 });
 
 const app = express();
+
+app.use(express.static('static'))
 
 // const myLogger = (req, res, next) => {
 //   console.log('LOGGED')
@@ -32,18 +34,18 @@ const app = express();
 
 app.use(express.json());
 
-const whitelist = ['http://localhost:3000', 'http://salt-final-project-frontend.herokuapp.com', 'https://salt-final-project-frontend.herokuapp.com'];
-const corsOptions = {
-  origin(origin, callback) {
-    if (!origin || whitelist.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-};
-app.use(cors(corsOptions));
+// const whitelist = ['http://localhost:3000', 'http://salt-final-project-frontend.herokuapp.com', 'https://salt-final-project-frontend.herokuapp.com'];
+// const corsOptions = {
+//   origin(origin, callback) {
+//     if (!origin || whitelist.indexOf(origin) !== -1) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true,
+// };
+// app.use(cors(corsOptions));
 
 // use the more modern express bodyparser later here instead
 app.use('/login', bodyParser.json());
@@ -98,10 +100,10 @@ app.post('/register', async (req, res) => {
 
 // Used for the client to check if it's logged in
 app.get('/login', (req, res) => {
-  // if (!req.session.user) {
-  //   res.json({ loggedIn: false });
-  //   return;
-  // };
+  if (!req.session.user) {
+    res.json({ loggedIn: false });
+    return;
+  };
   res.json({ loggedIn: true, user: req.session.user.user });
 });
 
@@ -147,6 +149,14 @@ app.post('/logout', (req, res) => {
   req.session.destroy();
   res.send('You have logged out');
 });
+
+app.get('*', (_, res) => {
+  // res.type('.html')
+  //   .render()
+  // fs.readFileSync('./static/index.html')
+  res.sendFile(__dirname + '/static/index.html')
+});
+// app.get('*', express.static('/static/index.html'));
 
 app.listen(PORT, () => {
   console.log(`Listening on port ${PORT}`);
