@@ -39,14 +39,15 @@ router.post('/:hobbyname', async (req, res) => {
     const inputObject = req.body;
     console.log(inputObject);
   
-    try {
-      await pool.query('INSERT INTO "Users" (username, password) VALUES ($1, $2)', [name, password]);
-    } catch (caughtError) {
-      res.status(500).json({ error: caughtError.message });
-      return;
-    }
+    // try {
+    //   await pool.query('INSERT INTO "Users" (username, password) VALUES ($1, $2)', [name, password]);
+    // } catch (caughtError) {
+    //   res.status(500).json({ error: caughtError.message });
+    //   return;
+    // }
   
-    res.json({ message: 'You have registered' });
+    // res.json({ message: 'You might have added the event' });
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
   });
 
 module.exports = router;

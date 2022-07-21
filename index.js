@@ -53,6 +53,7 @@ app.use(session({
 }));
 
 app.use('/api/hobbies', (req, res, next) => (!req.session.user ? res.status(403).json({ loggedIn: false }) : next()));
+// app.use('/api/events', (req, res, next) => (!req.session.user ? res.status(403).json({ loggedIn: false }) : next()));
 
 app.use('/api/hobbies', hobbies);
 app.use('/api/events', events);
