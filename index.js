@@ -20,21 +20,21 @@ const app = express();
 app.use(express.static('static'))
 app.use(express.json());
 
-const whitelist = ['http://localhost:3000', 'http://salt-final-project-frontend.herokuapp.com', 'https://salt-final-project-frontend.herokuapp.com'];
-// const whitelist = ['*'];
-const corsOptions = {
-  origin(origin, callback) {
-    if (!origin || whitelist.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  // origin: '*',
-  // optionSuccessStatus: 200
-};
-app.use(cors(corsOptions));
+// const whitelist = ['http://localhost:3000', 'http://salt-final-project-frontend.herokuapp.com', 'https://salt-final-project-frontend.herokuapp.com'];
+// // const whitelist = ['*'];
+// const corsOptions = {
+//   origin(origin, callback) {
+//     if (!origin || whitelist.indexOf(origin) !== -1) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   credentials: true,
+//   // origin: '*',
+//   // optionSuccessStatus: 200
+// };
+// app.use(cors(corsOptions));
 
 
 // use the more modern express bodyparser later here instead
