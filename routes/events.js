@@ -12,6 +12,7 @@ router.get('/', async (req, res) => {
     }
     console.log(rows);
     res.json({ events: rows });
+
   } catch (caughtError) {
     res.status(500).json({ error: caughtError.message });
   }
