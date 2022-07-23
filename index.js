@@ -10,7 +10,6 @@ const crypto = require('crypto');
 const { pool } = require('./database/connectionPool');
 const hobbies = require('./routes/hobbies');
 const events = require('./routes/events');
-const fs = require('fs')
 const PORT = process.env.PORT || 3001;
 
 const store = new MemoryStore({ checkPeriod: 86400000 });
@@ -20,30 +19,20 @@ const app = express();
 app.use(express.static('static'))
 app.use(express.json());
 
-// const whitelist = ['http://localhost:3000', 'http://salt-final-project-frontend.herokuapp.com', 'https://salt-final-project-frontend.herokuapp.com'];
-// // const whitelist = ['*'];
-// const corsOptions = {
-//   origin(origin, callback) {
-//     if (!origin || whitelist.indexOf(origin) !== -1) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   },
-//   credentials: true,
-//   // origin: '*',
-//   // optionSuccessStatus: 200
-// };
-// app.use(cors(corsOptions));
+if (process.env.NODE_ENV === 'development') {
+  const corsOptions = {
+    origin: 'http://localhost:3000',
+    credentials: true,
+    optionsSuccessStatus: 200
+ };
+  console.log('Running in development environment');
+  app.use(cors(corsOptions));
+}
 
-
-// use the more modern express bodyparser later here instead
 app.use('/login', bodyParser.json());
 app.use('/register', bodyParser.json());
 
 app.use(session({
-  // Randomly generating a session secret causes all sessions to become invalid
-  // when the server restarts. We are ok with this.
   secret: crypto.randomBytes(64).toString('hex'),
   secure: false,
   saveUninitialized: false,
@@ -52,9 +41,7 @@ app.use(session({
   store,
 }));
 
-app.use('/api/hobbies', (req, res, next) => (!req.session.user ? res.status(403).json({ loggedIn: false }) : next()));
-// app.use('/api/events', (req, res, next) => (!req.session.user ? res.status(403).json({ loggedIn: false }) : next()));
-
+app.use('/api/hobbies', (req, res, next) => !req.session.user ? res.status(403).json({ loggedIn: false }) : next());
 app.use('/api/hobbies', hobbies);
 app.use('/api/events', events);
 
@@ -64,27 +51,20 @@ app.post('/register', async (req, res) => {
   try {
     password = await argon2.hash(req.body.password);
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ error });
-    return;
+    return res.status(500).json({ error });
   }
 
   try {
     const { rows } = await pool.query('SELECT username FROM "Users" WHERE username = $1', [name]);
-    if (rows.length > 0) {
-      res.status(409).json({ error: 'That name is already taken' });
-      return;
-    }
+    if (rows.length > 0) return res.status(409).json({ error: 'That name is already taken' });
   } catch (caughtError) {
-    res.status(500).json({ error: caughtError.message });
-    return;
+    return res.status(500).json({ error: caughtError.message });
   }
 
   try {
     await pool.query('INSERT INTO "Users" (username, password) VALUES ($1, $2)', [name, password]);
   } catch (caughtError) {
-    res.status(500).json({ error: caughtError.message });
-    return;
+    return res.status(500).json({ error: caughtError.message });
   }
 
   res.json({ message: 'You have registered' });
@@ -92,59 +72,40 @@ app.post('/register', async (req, res) => {
 
 // Used for the client to check if it's logged in
 app.get('/login', (req, res) => {
-  if (!req.session.user) {
-    res.json({ loggedIn: false });
-    return;
-  };
+  if (!req.session.user) return res.json({ loggedIn: false });
   res.json({ loggedIn: true, user: req.session.user.user });
 });
 
 app.post('/login', asyncHandler(async (req, res) => {
   const { name, password } = req.body;
 
-  if (!name || !password) {
-    res.status(422).json({ error: 'You must submit a non empty name and password!' });
-    return;
-  }
+  if (!name || !password) return res.status(422).json({ error: 'You must submit a non empty name and password!' });
 
   const { rows } = await pool.query('SELECT username, id, password FROM "Users" WHERE username = $1', [name]);
   let verification = false;
-  // If the supplied name was found in the database
-  if (rows.length > 0) {
-    // Checks that the supplied password is correct and sets verification to true if it is
-    verification = await argon2.verify(rows[0].password, password);
-  }
+  if (rows.length > 0) verification = await argon2.verify(rows[0].password, password);
 
-  if (!verification) {
-    res.status(403).json({ error: 'Invalid name/password combination!' });
-  }
+  if (!verification) return res.status(403).json({ error: 'Invalid name/password combination!' });
 
-  const returnObject = {};
-
-  returnObject.user = rows[0].username;
-  returnObject.id = rows[0].id;
-  req.session.user = returnObject;
-  res.json(returnObject);
+  req.session.user = {
+    user: rows[0].username,
+    id: rows[0].id
+  };
+  
+  res.json(req.session.user);
 }));
 
-app.use((error, req, res, next) => {
+app.use((error, _, res, next) => {
   res.status(500).json({ error: error.message });
   next();
 });
 
 app.post('/logout', (req, res) => {
-  if (!req.session.user) {
-    res.status(400).send('You are not logged in and can therefore not log out');
-    return;
-  }
+  if (!req.session.user) return res.status(400).send('You are not logged in and can therefore not log out');
   req.session.destroy();
   res.send('You have logged out');
 });
 
-app.get('*', (_, res) => {
-  res.sendFile(__dirname + '/static/index.html')
-});
+app.get('*', (_, res) => res.sendFile(__dirname + '/static/index.html'));
 
-app.listen(PORT, () => {
-  console.log(`Listening on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
