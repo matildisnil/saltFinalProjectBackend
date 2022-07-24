@@ -27,7 +27,7 @@ router.get('/:hobbyname', async (req, res) => {
   try {
     const { rows } = await pool.query('SELECT * FROM "Hobbies" WHERE hobbyname ILIKE  $1', [hobbyName]);
     if (rows.length === 0) {
-      res.status(400).json({ error: 'No such hobby in our DB' });
+      res.status(404).json({ error: 'No such hobby in our DB' });
       return;
     }
     console.log(rows);
