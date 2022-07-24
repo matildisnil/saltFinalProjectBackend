@@ -41,7 +41,8 @@ app.use(session({
   store,
 }));
 
-app.use('/api/hobbies', (req, res, next) => !req.session.user ? res.status(403).json({ loggedIn: false }) : next());
+app.use('/api', (req, res, next) => !req.session.user ? res.status(403).json({ loggedIn: false }) : next());
+
 app.use('/api/hobbies', hobbies);
 app.use('/api/events', events);
 
@@ -107,5 +108,6 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('*', (_, res) => res.sendFile(__dirname + '/static/index.html'));
+// app.get('/', (_, res) => res.sendFile(__dirname + '/static/index.html'));
 
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
