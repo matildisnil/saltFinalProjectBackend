@@ -60,14 +60,21 @@ app.post('/register', async (req, res) => {
     if (rows.length > 0) return res.status(409).json({ error: 'That name is already taken' });
   } catch (caughtError) {
     return res.status(500).json({ error: caughtError.message });
-  }
+  } finally {
+    if (pool != null) {
+        try { pool.close(); } catch (caughtError) {}
+    }
+}
 
   try {
     await pool.query('INSERT INTO "Users" (username, password) VALUES ($1, $2)', [name, password]);
   } catch (caughtError) {
     return res.status(500).json({ error: caughtError.message });
-  }
-
+  } finally {
+    if (pool != null) {
+        try { pool.close(); } catch (caughtError) {}
+    }
+  } 
   res.json({ message: 'You have registered' });
 });
 
@@ -81,19 +88,27 @@ app.post('/login', asyncHandler(async (req, res) => {
   const { name, password } = req.body;
 
   if (!name || !password) return res.status(422).json({ error: 'You must submit a non empty name and password!' });
-
-  const { rows } = await pool.query('SELECT username, id, password FROM "Users" WHERE username = $1', [name]);
-  let verification = false;
-  if (rows.length > 0) verification = await argon2.verify(rows[0].password, password);
-
-  if (!verification) return res.status(403).json({ error: 'Invalid name/password combination!' });
-
-  req.session.user = {
-    user: rows[0].username,
-    id: rows[0].id
-  };
+  try {
+    const { rows } = await pool.query('SELECT username, id, password FROM "Users" WHERE username = $1', [name]);
+    let verification = false;
+    if (rows.length > 0) verification = await argon2.verify(rows[0].password, password);
   
-  res.json(req.session.user);
+    if (!verification) return res.status(403).json({ error: 'Invalid name/password combination!' });
+  
+    req.session.user = {
+      user: rows[0].username,
+      id: rows[0].id
+    };
+    
+    res.json(req.session.user);
+  } catch (e){
+
+  } finally {
+    if (pool != null) {
+        try { pool.close(); } catch (caughtError) {}
+    }
+}
+
 }));
 
 app.use((error, _, res, next) => {
