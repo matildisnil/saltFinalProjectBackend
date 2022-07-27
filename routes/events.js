@@ -11,7 +11,6 @@ router.get('/', async (req, res) => {
       res.status(400).json({ error: 'No events in our DB' });
       return;
     }
-    console.log(rows);
     res.json({ events: rows });
 
   } catch (caughtError) {
