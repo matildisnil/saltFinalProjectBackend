@@ -80,11 +80,15 @@ app.post('/register', async (req, res) => {
 
 // Used for the client to check if it's logged in
 app.get('/login', (req, res) => {
-  if (!req.session.user) return res.json({ loggedIn: false });
-  res.json({ loggedIn: true, user: req.session.user.user });
+  try{
+    if (!req.session.user) return res.json({ loggedIn: false });
+    res.json({ loggedIn: true, user: req.session.user.user });
+  } catch(caughtError){
+    res.status(500).send({error: caughtError.message});
+  }
 });
 
-app.post('/login', asyncHandler(async (req, res) => {
+app.post('/login', async (req, res) => {
   const { name, password } = req.body;
 
   if (!name || !password) return res.status(422).json({ error: 'You must submit a non empty name and password!' });
@@ -102,14 +106,13 @@ app.post('/login', asyncHandler(async (req, res) => {
     
     res.json(req.session.user);
   } catch (e){
-
+    res.status(500).send({error: e.message});
   } finally {
     if (pool != null) {
         try { pool.close(); } catch (caughtError) {}
     }
-}
-
-}));
+  }
+});
 
 app.use((error, _, res, next) => {
   res.status(500).json({ error: error.message });
@@ -123,6 +126,5 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('*', (_, res) => res.sendFile(__dirname + '/static/index.html'));
-// app.get('/', (_, res) => res.sendFile(__dirname + '/static/index.html'));
 
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
