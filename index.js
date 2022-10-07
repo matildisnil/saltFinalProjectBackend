@@ -60,41 +60,59 @@ app.post('/register', async (req, res) => {
     if (rows.length > 0) return res.status(409).json({ error: 'That name is already taken' });
   } catch (caughtError) {
     return res.status(500).json({ error: caughtError.message });
-  }
+  } finally {
+    if (pool != null) {
+        try { pool.close(); } catch (caughtError) {}
+    }
+}
 
   try {
     await pool.query('INSERT INTO "Users" (username, password) VALUES ($1, $2)', [name, password]);
   } catch (caughtError) {
     return res.status(500).json({ error: caughtError.message });
-  }
-
+  } finally {
+    if (pool != null) {
+        try { pool.close(); } catch (caughtError) {}
+    }
+  } 
   res.json({ message: 'You have registered' });
 });
 
 // Used for the client to check if it's logged in
 app.get('/login', (req, res) => {
-  if (!req.session.user) return res.json({ loggedIn: false });
-  res.json({ loggedIn: true, user: req.session.user.user });
+  try{
+    if (!req.session.user) return res.json({ loggedIn: false });
+    res.json({ loggedIn: true, user: req.session.user.user });
+  } catch(caughtError){
+    res.status(500).send({error: caughtError.message});
+  }
 });
 
-app.post('/login', asyncHandler(async (req, res) => {
+app.post('/login', async (req, res) => {
   const { name, password } = req.body;
 
   if (!name || !password) return res.status(422).json({ error: 'You must submit a non empty name and password!' });
-
-  const { rows } = await pool.query('SELECT username, id, password FROM "Users" WHERE username = $1', [name]);
-  let verification = false;
-  if (rows.length > 0) verification = await argon2.verify(rows[0].password, password);
-
-  if (!verification) return res.status(403).json({ error: 'Invalid name/password combination!' });
-
-  req.session.user = {
-    user: rows[0].username,
-    id: rows[0].id
-  };
+  try {
+    const { rows } = await pool.query('SELECT username, id, password FROM "Users" WHERE username = $1', [name]);
+    let verification = false;
+    if (rows.length > 0) verification = await argon2.verify(rows[0].password, password);
   
-  res.json(req.session.user);
-}));
+    if (!verification) return res.status(403).json({ error: 'Invalid name/password combination!' });
+  
+    req.session.user = {
+      user: rows[0].username,
+      id: rows[0].id
+    };
+    
+    res.json(req.session.user);
+  } catch (e){
+    res.status(500).send({error: e.message});
+  } finally {
+    if (pool != null) {
+        try { pool.close(); } catch (caughtError) {}
+    }
+  }
+});
 
 app.use((error, _, res, next) => {
   res.status(500).json({ error: error.message });
@@ -108,6 +126,5 @@ app.post('/logout', (req, res) => {
 });
 
 app.get('*', (_, res) => res.sendFile(__dirname + '/static/index.html'));
-// app.get('/', (_, res) => res.sendFile(__dirname + '/static/index.html'));
 
 app.listen(PORT, () => console.log(`Listening on port ${PORT}`));
