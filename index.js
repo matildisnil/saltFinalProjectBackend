@@ -25,7 +25,7 @@ if (process.env.NODE_ENV === 'development') {
     credentials: true,
     optionsSuccessStatus: 200
  };
-  console.log('Running in development environment');
+  console.log('Running in dev environment');
   app.use(cors(corsOptions));
 }
 
